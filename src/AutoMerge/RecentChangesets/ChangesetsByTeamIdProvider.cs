@@ -10,7 +10,7 @@ namespace AutoMerge.RecentChangesets
     {
         private readonly IEnumerable<int> _teamIds;
         WorkItemStore _workItemStore;
-        VersionControlArtifactProvider artifactProvider;
+        VersionControlArtifactProvider _artifactProvider;
 
 
         public ChangesetsByTeamIdProvider(IServiceProvider serviceProvider, IEnumerable<int> teamIds, WorkItemStore workItemStore, VersionControlArtifactProvider artifactProvider)
@@ -20,7 +20,7 @@ namespace AutoMerge.RecentChangesets
                 throw new ArgumentNullException("teamIds");
             _workItemStore = workItemStore;
             _teamIds = teamIds;
-           
+            _artifactProvider = artifactProvider;
         }
 
         protected override List<ChangesetViewModel> GetChangesetsInternal(string userLogin)
@@ -33,7 +33,7 @@ namespace AutoMerge.RecentChangesets
                 foreach (var changeset in
                     workItem.Links
                             .OfType<ExternalLink>()
-                            .Select(link => artifactProvider
+                            .Select(link => _artifactProvider
                             .GetChangeset(new Uri(link.LinkedArtifactUri))))
                 {
                     //Here do smth with the changesets
