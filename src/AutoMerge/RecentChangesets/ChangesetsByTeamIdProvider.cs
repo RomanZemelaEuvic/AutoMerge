@@ -13,7 +13,7 @@ namespace AutoMerge.RecentChangesets
         VersionControlArtifactProvider artifactProvider;
 
 
-        public ChangesetsByTeamIdProvider(IServiceProvider serviceProvider, IEnumerable<int> teamIds, WorkItemStore workItemStore)
+        public ChangesetsByTeamIdProvider(IServiceProvider serviceProvider, IEnumerable<int> teamIds, WorkItemStore workItemStore, VersionControlArtifactProvider artifactProvider)
             : base(serviceProvider)
         {
             if (teamIds == null)
@@ -39,7 +39,7 @@ namespace AutoMerge.RecentChangesets
                     //Here do smth with the changesets
                     changesets.Add(ToChangesetViewModel(changeset, changesetService)); //This changes the tfschangeset into a viewmodel
 
-                    fsodjsaodkasokdaoskdoaskdaosk
+                    
 
                 }
             }     
