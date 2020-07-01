@@ -1,13 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using AutoMerge.Events;
 using AutoMerge.Prism.Command;
 using AutoMerge.Prism.Events;
+using AutoMerge.RecentChangesets;
 using Microsoft.TeamFoundation;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.Controls;
 using Microsoft.TeamFoundation.Controls.WPF.TeamExplorer;
+using Microsoft.TeamFoundation.VersionControl.Client;
+using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using Task = System.Threading.Tasks.Task;
 
 using TeamExplorerSectionViewModelBase = AutoMerge.Base.TeamExplorerSectionViewModelBase;
@@ -33,11 +36,21 @@ namespace AutoMerge
             _eventAggregator.GetEvent<MergeCompleteEvent>()
                 .Subscribe(OnMergeComplete);
 
+
             ViewChangesetDetailsCommand = new DelegateCommand(ViewChangesetDetailsExecute, ViewChangesetDetailsCanExecute);
+
+            //By Changeset ID
             ToggleAddByIdCommand = new DelegateCommand(ToggleAddByIdExecute, ToggleAddByIdCanExecute);
             CancelAddChangesetByIdCommand = new DelegateCommand(CancelAddByIdExecute);
             AddChangesetByIdCommand = new DelegateCommand(AddChangesetByIdExecute, AddChangesetByIdCanExecute);
+
+            //By Team ID            
+            ToggleAddByTeamIdCommand = new DelegateCommand(ToggleAddByTeamIdExecute, ToggleAddByTeamIdCanExecute);
+            CancelAddChangesetByTeamIdCommand = new DelegateCommand(CancelAddByTeamIdExecute);
+            AddChangesetByTeamIdCommand = new DelegateCommand(AddChangesetByTeamIdExecute, AddChangesetByTeamIdCanExecute);
         }
+
+     
 
         public ChangesetViewModel SelectedChangeset
         {
@@ -82,6 +95,20 @@ namespace AutoMerge
         }
         private bool _showAddByIdChangeset;
 
+        public bool ShowAddByTeamIdChangeset
+        {
+            get
+            {
+                return _showAddByTeamIdChangeset;
+            }
+            set
+            {
+                _showAddByTeamIdChangeset = value;
+                RaisePropertyChanged("ShowAddByTeamIdChangeset");
+            }
+        }
+        private bool _showAddByTeamIdChangeset;
+
         public string ChangesetIdsText
         {
             get
@@ -97,13 +124,34 @@ namespace AutoMerge
         }
         private string _changesetIdsText;
 
+        public string ChangesetTeamIdsText
+        {
+            get
+            {
+                return _changesetTeamIdsText;
+            }
+            set
+            {
+                _changesetTeamIdsText = value;
+                RaisePropertyChanged("ChangesetTeamIdsText");
+                InvalidateCommands();
+            }
+        }
+        private string _changesetTeamIdsText;
+
         public DelegateCommand ViewChangesetDetailsCommand { get; private set; }
 
         public DelegateCommand ToggleAddByIdCommand { get; private set; }
 
+        public DelegateCommand ToggleAddByTeamIdCommand { get; private set; }
+
         public DelegateCommand AddChangesetByIdCommand { get; private set; }
 
         public DelegateCommand CancelAddChangesetByIdCommand { get; private set; }
+
+        public DelegateCommand AddChangesetByTeamIdCommand { get; private set; } //to do
+
+        public DelegateCommand CancelAddChangesetByTeamIdCommand { get; private set; } //to do
 
         private void ViewChangesetDetailsExecute()
         {
@@ -177,9 +225,31 @@ namespace AutoMerge
             }
         }
 
+        private void ToggleAddByTeamIdExecute()
+        {
+            try
+            {
+                ShowAddByTeamIdChangeset = true;
+                InvalidateCommands();
+                ResetAddByTeamId();
+                SetMvvmFocus(RecentChangesetFocusableControlNames.ChangesetTeamIdTextBox);
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+                throw;
+            }
+        }
+
+
         private bool ToggleAddByIdCanExecute()
         {
             return !ShowAddByIdChangeset;
+        }
+
+        private bool ToggleAddByTeamIdCanExecute()
+        {
+            return !ShowAddByTeamIdChangeset;
         }
 
         private void CancelAddByIdExecute()
@@ -197,9 +267,29 @@ namespace AutoMerge
             }
         }
 
+        private void CancelAddByTeamIdExecute()
+        {
+            try
+            {
+                ShowAddByTeamIdChangeset = false;
+                InvalidateCommands();
+                SetMvvmFocus(RecentChangesetFocusableControlNames.AddChangesetByTeamIdLink);
+                ResetAddByTeamId();
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+            }
+        }
+
         private void ResetAddById()
         {
             ChangesetIdsText = string.Empty;
+        }
+
+        private void ResetAddByTeamId()
+        {
+            ChangesetTeamIdsText = string.Empty;
         }
 
         private async void AddChangesetByIdExecute()
@@ -207,7 +297,7 @@ namespace AutoMerge
             ShowBusy();
             try
             {
-                var changesetIds = GeChangesetIdsToAdd(ChangesetIdsText);
+                var changesetIds = GetChangesetIdsToAdd(ChangesetIdsText);
                 if (changesetIds.Count > 0)
                 {
                     var changesetProvider = new ChangesetByIdChangesetProvider(ServiceProvider, changesetIds);
@@ -230,11 +320,63 @@ namespace AutoMerge
             HideBusy();
         }
 
+        private async void AddChangesetByTeamIdExecute()
+        {
+            ShowBusy();
+            try
+            {
+                var TeamIds = GetTeamIdsFromText(ChangesetTeamIdsText);                
+                //Pozmieniać, żeby zamiast po tyc changesetach, leciał po teamach
+                if (TeamIds.Count > 0)
+                {
+                    var context = Context;
+                    var tfs = context.TeamProjectCollection;
+                    var versionControl = tfs.GetService<VersionControlServer>();
+                    var artifactProvider = versionControl.ArtifactProvider;
+                    var workItemStore = tfs.GetService<WorkItemStore>();
+                    var changesetProvider = new ChangesetsByTeamIdProvider(ServiceProvider, TeamIds, workItemStore, artifactProvider);
+                    var changesets = await changesetProvider.GetChangesets(null);
+
+                    if (changesets.Count > 0)
+                    {
+                        Changesets.Add(changesets[0]);
+                        SelectedChangeset = changesets[0];
+                        SetMvvmFocus(RecentChangesetFocusableControlNames.ChangesetList);
+                        UpdateTitle();
+                    }
+                    ShowAddByTeamIdChangeset = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+            }
+            HideBusy();
+        }
+
+
+        //Takes Team Ids from the Frontend TextBox
+        private static List<int> GetTeamIdsFromText(string text)
+        {
+            var list = new List<int>();
+            var teamIdsStrArray = string.IsNullOrEmpty(text) ? new string[0] : text.Split(new[] { ',', ';' });
+            if (teamIdsStrArray.Length > 0)
+            {
+                foreach (var idStr in teamIdsStrArray)
+                {
+                    int result;
+                    if (int.TryParse(idStr.Trim(), out result) && result > 0)
+                        list.Add(result);
+                }
+            }
+            return list;
+        }
+
         private bool AddChangesetByIdCanExecute()
         {
             try
             {
-                return GeChangesetIdsToAdd(ChangesetIdsText).Count > 0;
+                return GetChangesetIdsToAdd(ChangesetIdsText).Count > 0;
             }
             catch (Exception ex)
             {
@@ -244,7 +386,38 @@ namespace AutoMerge
             return false;
         }
 
-        private static List<int> GeChangesetIdsToAdd(string text)
+        private bool AddChangesetByTeamIdCanExecute()
+        {
+            try
+            {
+                return GeChangesetTeamIdsToAdd(ChangesetTeamIdsText).Count > 0;
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+                TeamFoundationTrace.TraceException(ex);
+            }
+            return false;
+        }
+
+        private static List<int> GetChangesetIdsToAdd(string text)
+        {
+            var list = new List<int>();
+            var idsStrArray = string.IsNullOrEmpty(text) ? new string[0] : text.Split(new[] { ',', ';' });
+            if (idsStrArray.Length > 0)
+            {
+                foreach (var idStr in idsStrArray)
+                {
+                    int result;
+                    if (int.TryParse(idStr.Trim(), out result) && result > 0)
+                        list.Add(result);
+                }
+            }
+            return list;
+        }
+
+        //Tutaj pozmieniać
+        private static List<int> GeChangesetTeamIdsToAdd(string text) 
         {
             var list = new List<int>();
             var idsStrArray = string.IsNullOrEmpty(text) ? new string[0] : text.Split(new[] { ',', ';' });
@@ -266,6 +439,8 @@ namespace AutoMerge
             ToggleAddByIdCommand.RaiseCanExecuteChanged();
             CancelAddChangesetByIdCommand.RaiseCanExecuteChanged();
             AddChangesetByIdCommand.RaiseCanExecuteChanged();
+            CancelAddChangesetByTeamIdCommand.RaiseCanExecuteChanged();
+            AddChangesetByTeamIdCommand.RaiseCanExecuteChanged();
         }
 
         public override void Dispose()

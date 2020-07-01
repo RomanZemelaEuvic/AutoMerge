@@ -161,6 +161,7 @@
     <Compile Include="RecentChangesets\ChangesetCommentConverter.cs" />
     <Compile Include="RecentChangesets\ChangesetProviderBase.cs" />
     <Compile Include="RecentChangesets\ChangesetViewModel.cs" />
+    <Compile Include="RecentChangesets\ChangesetsByTeamIdProvider.cs" />
     <Compile Include="RecentChangesets\IChangesetProvider.cs" />
     <Compile Include="RecentChangesets\MyChangesetChangesetProvider.cs" />
     <Compile Include="RecentChangesets\RecentChangesetFocusableControlNames.cs" />

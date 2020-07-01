@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.TeamFoundation.VersionControl.Client;
 
@@ -32,6 +32,7 @@ namespace AutoMerge
 
 		public Changeset GetChangeset(int changesetId)
 		{
+            //Niezabezpieczone / Unsecured - in debug if changeset with provided Id don't exist, extension crashes
 			var changeset = _versionControlServer.GetChangeset(changesetId, false, false);
 
 			return changeset;

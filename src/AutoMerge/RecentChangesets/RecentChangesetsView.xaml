@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="AutoMerge.RecentChangesetsView"
+<UserControl x:Class="AutoMerge.RecentChangesetsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:autoMerge="clr-namespace:AutoMerge;assembly="
@@ -94,6 +94,50 @@
           <teamExplorer:TextLink Margin="6,0,0,0"
                                  VerticalAlignment="Center"
                                  Command="{Binding CancelAddChangesetByIdCommand}"
+                                 Localization.Attributes="Text (Modifiable Readable Text)"
+                                 Text="Cancel"
+                                 x:Uid="cancelLink" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+    <WrapPanel Margin="0,0,0,6">
+      <teamExplorer:DropDownLink x:Name="addChangesetByTeamIdLink"
+                                 VerticalAlignment="Center"
+                                 DropDownMenuCommand="{Binding ToggleAddByTeamIdCommand}"
+                                 Localization.Attributes="Text (Modifiable Readable Text)"
+                                 Text="Add By Team Id"
+                                 ToolTip="Add existing changeset by team id" />
+    </WrapPanel>
+    <Border Margin="0,0,0,6"
+            Background="{StaticResource EmbeddedDialogBackgroundBrushKey}"
+            BorderThickness="0"
+            Visibility="{Binding ShowAddByTeamIdChangeset,
+                                 Converter={StaticResource TrueToVisibleConverter}}">
+      <StackPanel Margin="6,6,6,6">
+        <wpf:LabeledTextBox x:Name="teamIdTextBox"
+                            Margin="0"
+                            AcceptsReturn="False"
+                            HintText="Enter the team ID"
+                            Localization.Attributes="HintText (Modifiable Readable Text)"
+                            Text="{Binding Path=ChangesetTeamIdsText,
+                                           UpdateSourceTrigger=PropertyChanged,
+                                           Mode=TwoWay}">
+          <wpf:LabeledTextBox.InputBindings>
+            <KeyBinding Key="Enter" Command="{Binding AddChangesetByTeamIdCommand}" /> <!--Tutaj zmienić-->
+          </wpf:LabeledTextBox.InputBindings>
+        </wpf:LabeledTextBox>
+        <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+          <Button MinWidth="75"
+                  MinHeight="23"
+                  Margin="0"
+                  VerticalAlignment="Center"
+                  Command="{Binding AddChangesetByTeamIdCommand}"
+                  Content="Add"
+                  Localization.Attributes="Content (Modifiable Readable Text)"
+                  Padding="6,2,6,2" />
+          <teamExplorer:TextLink Margin="6,0,0,0"
+                                 VerticalAlignment="Center"
+                                 Command="{Binding CancelAddChangesetByTeamIdCommand}"
                                  Localization.Attributes="Text (Modifiable Readable Text)"
                                  Text="Cancel"
                                  x:Uid="cancelLink" />

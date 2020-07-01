@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 
 namespace AutoMerge
 {
@@ -10,7 +10,11 @@ namespace AutoMerge
 
         public bool ShowAddByIdChangeset { get; set; }
 
+        public bool ShowAddByTeamIdChangeset { get; set; }
+
         public string ChangesetIdsText { get; set; }
+
+        public string ChangesetTeamIdsText { get; set; }
 
         public string Title { get; set; }
     }

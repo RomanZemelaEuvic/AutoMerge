@@ -1,4 +1,4 @@
-﻿using System.Windows.Controls;
+using System.Windows.Controls;
 using Microsoft.TeamFoundation.Controls.MVVM;
 
 namespace AutoMerge
@@ -20,11 +20,18 @@ namespace AutoMerge
 				case RecentChangesetFocusableControlNames.AddChangesetByIdLink:
 					addChangesetByIdLink.Focus();
 					break;
-				case RecentChangesetFocusableControlNames.ChangesetIdTextBox:
+                case RecentChangesetFocusableControlNames.AddChangesetByTeamIdLink:
+                    addChangesetByTeamIdLink.Focus();
+                    break;
+                case RecentChangesetFocusableControlNames.ChangesetIdTextBox:
 					changesetIdTextBox.FocusTextBox();
 					changesetIdTextBox.TextBoxControl.SelectionStart = changesetIdTextBox.TextBoxControl.Text.Length;
 					break;
-				case RecentChangesetFocusableControlNames.ChangesetList:
+                case RecentChangesetFocusableControlNames.ChangesetTeamIdTextBox:
+                    teamIdTextBox.FocusTextBox();
+                    teamIdTextBox.TextBoxControl.SelectionStart = teamIdTextBox.TextBoxControl.Text.Length;
+                    break;
+                case RecentChangesetFocusableControlNames.ChangesetList:
 					if (changesetList.SelectedItem != null)
 					{
 						changesetList.UpdateLayout();
