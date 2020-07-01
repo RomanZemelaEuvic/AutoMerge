@@ -33,8 +33,7 @@ namespace AutoMerge.RecentChangesets
                 foreach (var changeset in
                     workItem.Links
                             .OfType<ExternalLink>()
-                            .Select(link => _artifactProvider
-                            .GetChangeset(new Uri(link.LinkedArtifactUri))))
+                            .Select(link => _artifactProvider.GetChangeset(new Uri(link.LinkedArtifactUri))))
                 {
                     //Here do smth with the changesets
                     changesets.Add(ToChangesetViewModel(changeset, changesetService)); //This changes the tfschangeset into a viewmodel

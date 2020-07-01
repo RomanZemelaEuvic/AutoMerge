@@ -326,7 +326,7 @@ namespace AutoMerge
             try
             {
                 var TeamIds = GetTeamIdsFromText(ChangesetTeamIdsText);                
-                //Pozmieniać, żeby zamiast po tyc changesetach, leciał po teamach
+                
                 if (TeamIds.Count > 0)
                 {
                     var context = Context;
@@ -455,9 +455,11 @@ namespace AutoMerge
             var context = new RecentChangesetsViewModelContext
             {
                 ChangesetIdsText = ChangesetIdsText,
+                ChangesetTeamIdsText = ChangesetTeamIdsText,
                 Changesets = Changesets,
                 SelectedChangeset = SelectedChangeset,
                 ShowAddByIdChangeset = ShowAddByIdChangeset,
+                ShowAddByTeamIdChangeset = ShowAddByTeamIdChangeset,
                 Title = Title
             };
 
@@ -468,9 +470,11 @@ namespace AutoMerge
         {
             var context = (RecentChangesetsViewModelContext)e.Context;
             ChangesetIdsText = context.ChangesetIdsText;
+            ChangesetTeamIdsText = context.ChangesetTeamIdsText;
             Changesets = context.Changesets;
             SelectedChangeset = context.SelectedChangeset;
             ShowAddByIdChangeset = context.ShowAddByIdChangeset;
+            ShowAddByTeamIdChangeset = context.ShowAddByTeamIdChangeset;
             Title = context.Title;
         }
 
