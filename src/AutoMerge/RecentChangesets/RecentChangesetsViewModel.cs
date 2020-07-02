@@ -305,7 +305,10 @@ namespace AutoMerge
 
                     if (changesets.Count > 0)
                     {
-                        Changesets.Add(changesets[0]);
+                        foreach (ChangesetViewModel changeset in changesets)
+                        {
+                            Changesets.Add(changeset);
+                        }         
                         SelectedChangeset = changesets[0];
                         SetMvvmFocus(RecentChangesetFocusableControlNames.ChangesetList);
                         UpdateTitle();
@@ -339,7 +342,10 @@ namespace AutoMerge
 
                     if (changesets.Count > 0)
                     {
-                        Changesets.Add(changesets[0]);
+                        foreach (ChangesetViewModel changeset in changesets)
+                        {
+                            Changesets.Add(changeset);
+                        }
                         SelectedChangeset = changesets[0];
                         SetMvvmFocus(RecentChangesetFocusableControlNames.ChangesetList);
                         UpdateTitle();
@@ -406,7 +412,7 @@ namespace AutoMerge
             var idsStrArray = string.IsNullOrEmpty(text) ? new string[0] : text.Split(new[] { ',', ';' });
             if (idsStrArray.Length > 0)
             {
-                foreach (var idStr in idsStrArray)
+                ; foreach (var idStr in idsStrArray)
                 {
                     int result;
                     if (int.TryParse(idStr.Trim(), out result) && result > 0)
