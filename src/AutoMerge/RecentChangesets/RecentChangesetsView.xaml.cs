@@ -17,11 +17,18 @@ namespace AutoMerge
 		{
 			switch (id)
 			{
-				case RecentChangesetFocusableControlNames.AddChangesetByIdLink:
+                case RecentChangesetFocusableControlNames.AddBranchToMergeFrom:
+                    addBranchToMergeFrom.Focus();
+                    break;
+                case RecentChangesetFocusableControlNames.AddChangesetByIdLink:
 					addChangesetByIdLink.Focus();
 					break;
                 case RecentChangesetFocusableControlNames.AddChangesetByTeamIdLink:
                     addChangesetByTeamIdLink.Focus();
+                    break;
+                case RecentChangesetFocusableControlNames.BranchNameTextBox:
+                    branchNameTextBox.FocusTextBox();
+                    branchNameTextBox.TextBoxControl.SelectionStart = branchNameTextBox.TextBoxControl.Text.Length;
                     break;
                 case RecentChangesetFocusableControlNames.ChangesetIdTextBox:
 					changesetIdTextBox.FocusTextBox();

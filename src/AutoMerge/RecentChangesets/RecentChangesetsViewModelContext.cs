@@ -8,9 +8,13 @@ namespace AutoMerge
 
         public ObservableCollection<ChangesetViewModel> Changesets { get; set; }
 
+        public bool ShowAddBranchToMergeFrom { get; set; }
+
         public bool ShowAddByIdChangeset { get; set; }
 
         public bool ShowAddByTeamIdChangeset { get; set; }
+
+        public string BranchNameText { get; set; }
 
         public string ChangesetIdsText { get; set; }
 

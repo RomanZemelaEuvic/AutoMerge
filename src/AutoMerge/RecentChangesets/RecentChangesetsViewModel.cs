@@ -39,6 +39,12 @@ namespace AutoMerge
 
             ViewChangesetDetailsCommand = new DelegateCommand(ViewChangesetDetailsExecute, ViewChangesetDetailsCanExecute);
 
+            //Branch to merge from
+            ToggleAddBranchToMergeFromCommand = new DelegateCommand(ToggleAddBranchToMergeFromExecute, ToggleAddBranchToMergeFromCanExecute);
+            ResetAddBranchToMergeFromCommand = new DelegateCommand(ResetAddBranchToMergeFromExecute);
+            AddBranchToMergeFromCommand = new DelegateCommand(AddBranchToMergeFromExecute, AddBranchToMergeFromCanExecute);
+            branchesToMergeFrom = new List<string>();
+
             //By Changeset ID
             ToggleAddByIdCommand = new DelegateCommand(ToggleAddByIdExecute, ToggleAddByIdCanExecute);
             CancelAddChangesetByIdCommand = new DelegateCommand(CancelAddByIdExecute);
@@ -81,6 +87,20 @@ namespace AutoMerge
         }
         private ObservableCollection<ChangesetViewModel> _changesets;
 
+        public bool ShowAddBranchToMergeFrom
+        {
+            get
+            {
+                return _showAddBranchToMergeFrom;
+            }
+            set
+            {
+                _showAddBranchToMergeFrom = value;
+                RaisePropertyChanged("ShowAddBranchToMergeFrom");
+            }
+        }
+        private bool _showAddBranchToMergeFrom;
+
         public bool ShowAddByIdChangeset
         {
             get
@@ -108,6 +128,21 @@ namespace AutoMerge
             }
         }
         private bool _showAddByTeamIdChangeset;
+
+        public string BranchNameText
+        {
+            get
+            {
+                return _branchNameText;
+            }
+            set
+            {
+                _branchNameText = value;
+                RaisePropertyChanged("BranchNameText");
+                InvalidateCommands();
+            }
+        }
+        private string _branchNameText;
 
         public string ChangesetIdsText
         {
@@ -141,6 +176,12 @@ namespace AutoMerge
 
         public DelegateCommand ViewChangesetDetailsCommand { get; private set; }
 
+        public DelegateCommand ToggleAddBranchToMergeFromCommand { get; private set; }
+
+        public DelegateCommand ResetAddBranchToMergeFromCommand { get; private set; }
+
+        public DelegateCommand AddBranchToMergeFromCommand { get; private set; }
+
         public DelegateCommand ToggleAddByIdCommand { get; private set; }
 
         public DelegateCommand ToggleAddByTeamIdCommand { get; private set; }
@@ -149,9 +190,9 @@ namespace AutoMerge
 
         public DelegateCommand CancelAddChangesetByIdCommand { get; private set; }
 
-        public DelegateCommand AddChangesetByTeamIdCommand { get; private set; } //to do
+        public DelegateCommand AddChangesetByTeamIdCommand { get; private set; } 
 
-        public DelegateCommand CancelAddChangesetByTeamIdCommand { get; private set; } //to do
+        public DelegateCommand CancelAddChangesetByTeamIdCommand { get; private set; } 
 
         private void ViewChangesetDetailsExecute()
         {
@@ -209,6 +250,22 @@ namespace AutoMerge
                 : _baseTitle;
         }
 
+        private void ToggleAddBranchToMergeFromExecute()
+        {
+            try
+            {
+                ShowAddBranchToMergeFrom = true;
+                InvalidateCommands();
+                ResetAddById();
+                SetMvvmFocus(RecentChangesetFocusableControlNames.BranchNameTextBox);
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+                throw;
+            }
+        }
+
         private void ToggleAddByIdExecute()
         {
             try
@@ -241,6 +298,10 @@ namespace AutoMerge
             }
         }
 
+        private bool ToggleAddBranchToMergeFromCanExecute()
+        {
+            return !ShowAddBranchToMergeFrom;
+        }
 
         private bool ToggleAddByIdCanExecute()
         {
@@ -250,6 +311,22 @@ namespace AutoMerge
         private bool ToggleAddByTeamIdCanExecute()
         {
             return !ShowAddByTeamIdChangeset;
+        }
+
+        private void ResetAddBranchToMergeFromExecute()
+        {
+            try
+            {
+                ShowAddBranchToMergeFrom = false;
+                InvalidateCommands(); 
+                SetMvvmFocus(RecentChangesetFocusableControlNames.BranchNameTextBox);
+                ResetAddBranchToMergeFrom();
+                branchesToMergeFrom.Clear();
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+            }
         }
 
         private void CancelAddByIdExecute()
@@ -265,7 +342,7 @@ namespace AutoMerge
             {
                 ShowException(ex);
             }
-        }
+        }     
 
         private void CancelAddByTeamIdExecute()
         {
@@ -282,6 +359,10 @@ namespace AutoMerge
             }
         }
 
+        private void ResetAddBranchToMergeFrom()
+        {
+            BranchNameText = string.Empty;
+        }
         private void ResetAddById()
         {
             ChangesetIdsText = string.Empty;
@@ -291,6 +372,23 @@ namespace AutoMerge
         {
             ChangesetTeamIdsText = string.Empty;
         }
+
+        private async void AddBranchToMergeFromExecute()
+        {
+            ShowBusy();
+            try
+            {
+                var branchNames = GetBranchesToMergeFrom(BranchNameText);
+                branchesToMergeFrom = branchNames;                    
+                ShowAddBranchToMergeFrom = false;                
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+            }
+            HideBusy();
+        }
+        private List<string> branchesToMergeFrom;
 
         private async void AddChangesetByIdExecute()
         {
@@ -342,11 +440,8 @@ namespace AutoMerge
 
                     if (changesets.Count > 0)
                     {
-                        foreach (ChangesetViewModel changeset in changesets)
-                        {
-                            Changesets.Add(changeset);
-                        }
-                        SelectedChangeset = changesets[0];
+                        CheckIfChangesetIsFromDesiredBranchAndAddToResults(changesets);
+                        SelectedChangeset = Changesets[0];
                         SetMvvmFocus(RecentChangesetFocusableControlNames.ChangesetList);
                         UpdateTitle();
                     }
@@ -358,6 +453,33 @@ namespace AutoMerge
                 ShowException(ex);
             }
             HideBusy();
+        }
+
+        private void CheckIfChangesetIsFromDesiredBranchAndAddToResults(List<ChangesetViewModel> changesets)
+        {
+            bool restrictBranches = false;
+            if (branchesToMergeFrom.Count > 0)
+            {
+                restrictBranches = true;
+            }
+            bool branchFound = false;
+            foreach (ChangesetViewModel changeset in changesets)
+            {
+                branchFound = false;
+                if (restrictBranches)
+                {
+                    foreach (string branch in changeset.Branches)
+                    {
+                        if (branchesToMergeFrom.Contains(branch))
+                        {
+                            branchFound = true;
+                            break;
+                        }
+                    }
+                }
+                else branchFound = true;
+                if (branchFound) Changesets.Add(changeset);
+            }
         }
 
 
@@ -392,6 +514,20 @@ namespace AutoMerge
             return false;
         }
 
+        private bool AddBranchToMergeFromCanExecute()
+        {
+            try
+            {
+                return GetBranchesToMergeFrom(BranchNameText).Count > 0;
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+                TeamFoundationTrace.TraceException(ex);
+            }
+            return false;
+        }
+
         private bool AddChangesetByTeamIdCanExecute()
         {
             try
@@ -404,6 +540,13 @@ namespace AutoMerge
                 TeamFoundationTrace.TraceException(ex);
             }
             return false;
+        }
+
+        private static List<string> GetBranchesToMergeFrom(string text)
+        {
+            var branchNamesArray = string.IsNullOrEmpty(text) ? new string[0] : text.Split(new[] { ',', ';' });
+            var resultList = new List<string>(branchNamesArray);
+            return resultList;
         }
 
         private static List<int> GetChangesetIdsToAdd(string text)
@@ -422,7 +565,7 @@ namespace AutoMerge
             return list;
         }
 
-        //Tutaj pozmieniać
+        
         private static List<int> GeChangesetTeamIdsToAdd(string text) 
         {
             var list = new List<int>();
@@ -442,9 +585,13 @@ namespace AutoMerge
         private void InvalidateCommands()
         {
             ViewChangesetDetailsCommand.RaiseCanExecuteChanged();
+            ToggleAddBranchToMergeFromCommand.RaiseCanExecuteChanged();
+            ResetAddBranchToMergeFromCommand.RaiseCanExecuteChanged();
+            AddBranchToMergeFromCommand.RaiseCanExecuteChanged();
             ToggleAddByIdCommand.RaiseCanExecuteChanged();
             CancelAddChangesetByIdCommand.RaiseCanExecuteChanged();
             AddChangesetByIdCommand.RaiseCanExecuteChanged();
+            ToggleAddByTeamIdCommand.RaiseCanExecuteChanged();
             CancelAddChangesetByTeamIdCommand.RaiseCanExecuteChanged();
             AddChangesetByTeamIdCommand.RaiseCanExecuteChanged();
         }
@@ -460,10 +607,12 @@ namespace AutoMerge
             base.SaveContext(sender, e);
             var context = new RecentChangesetsViewModelContext
             {
+                BranchNameText = BranchNameText,
                 ChangesetIdsText = ChangesetIdsText,
                 ChangesetTeamIdsText = ChangesetTeamIdsText,
                 Changesets = Changesets,
                 SelectedChangeset = SelectedChangeset,
+                ShowAddBranchToMergeFrom = ShowAddBranchToMergeFrom,
                 ShowAddByIdChangeset = ShowAddByIdChangeset,
                 ShowAddByTeamIdChangeset = ShowAddByTeamIdChangeset,
                 Title = Title
@@ -475,10 +624,12 @@ namespace AutoMerge
         private void RestoreContext(SectionInitializeEventArgs e)
         {
             var context = (RecentChangesetsViewModelContext)e.Context;
+            BranchNameText = context.BranchNameText;
             ChangesetIdsText = context.ChangesetIdsText;
             ChangesetTeamIdsText = context.ChangesetTeamIdsText;
             Changesets = context.Changesets;
             SelectedChangeset = context.SelectedChangeset;
+            ShowAddBranchToMergeFrom = context.ShowAddBranchToMergeFrom;
             ShowAddByIdChangeset = context.ShowAddByIdChangeset;
             ShowAddByTeamIdChangeset = context.ShowAddByTeamIdChangeset;
             Title = context.Title;

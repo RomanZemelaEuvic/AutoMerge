@@ -57,6 +57,50 @@
   </UserControl.Resources>
   <StackPanel Margin="6,6,6,6">
     <WrapPanel Margin="0,0,0,6">
+      <teamExplorer:DropDownLink x:Name="addBranchToMergeFrom"
+                                 VerticalAlignment="Center"
+                                 DropDownMenuCommand="{Binding ToggleAddBranchToMergeFromCommand}"
+                                 Localization.Attributes="Text (Modifiable Readable Text)"
+                                 Text="Add Branch To Merge From"
+                                 ToolTip="Add specific Branch to take changes from" />
+    </WrapPanel>
+    <Border Margin="0,0,0,6"
+            Background="{StaticResource EmbeddedDialogBackgroundBrushKey}"
+            BorderThickness="0"
+            Visibility="{Binding ShowAddBranchToMergeFrom,
+                                 Converter={StaticResource TrueToVisibleConverter}}">
+      <StackPanel Margin="6,6,6,6">
+        <wpf:LabeledTextBox x:Name="branchNameTextBox"
+                            Margin="0"
+                            AcceptsReturn="False"
+                            HintText="Enter the name of the branch"
+                            Localization.Attributes="HintText (Modifiable Readable Text)"
+                            Text="{Binding Path=BranchNameText,
+                                           UpdateSourceTrigger=PropertyChanged,
+                                           Mode=TwoWay}">
+          <wpf:LabeledTextBox.InputBindings>
+            <KeyBinding Key="Enter" Command="{Binding AddBranchToMergeFromCommand}" />
+          </wpf:LabeledTextBox.InputBindings>
+        </wpf:LabeledTextBox>
+        <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+          <Button MinWidth="75"
+                  MinHeight="23"
+                  Margin="0"
+                  VerticalAlignment="Center"
+                  Command="{Binding AddBranchToMergeFromCommand}"
+                  Content="Add"
+                  Localization.Attributes="Content (Modifiable Readable Text)"
+                  Padding="6,2,6,2" />
+          <teamExplorer:TextLink Margin="6,0,0,0"
+                                 VerticalAlignment="Center"
+                                 Command="{Binding ResetAddBranchToMergeFromCommand}"
+                                 Localization.Attributes="Text (Modifiable Readable Text)"
+                                 Text="Reset"
+                                 x:Uid="resetLink" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+    <WrapPanel Margin="0,0,0,6">
       <teamExplorer:DropDownLink x:Name="addChangesetByIdLink"
                                  VerticalAlignment="Center"
                                  DropDownMenuCommand="{Binding ToggleAddByIdCommand}"
