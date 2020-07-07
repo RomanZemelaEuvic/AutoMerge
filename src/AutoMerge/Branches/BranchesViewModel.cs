@@ -42,9 +42,19 @@ namespace AutoMerge
             SelectWorkspaceCommand = new DelegateCommand<Workspace>(SelectWorkspaceExecute);
             OpenSourceControlExplorerCommand = new DelegateCommand(OpenSourceControlExplorerExecute, OpenSourceControlExplorerCanExecute);
 
+            ToggleMergeOneCommand = new DelegateCommand(ToggleMergeOneExecute);
+            CancelMergeOneCommand = new DelegateCommand(CancelMergeOneExecute);
+
+            ToggleMergeAllCommand = new DelegateCommand(ToggleMergeAllExecute);
+            CancelMergeAllCommand = new DelegateCommand(CancelMergeAllExecute);
+
             _eventAggregator = EventAggregatorFactory.Get();
             _merging = false;
         }
+        public DelegateCommand ToggleMergeOneCommand { get; private set; }
+        public DelegateCommand CancelMergeOneCommand { get; private set; }
+        public DelegateCommand ToggleMergeAllCommand { get; private set; }
+        public DelegateCommand CancelMergeAllCommand { get; private set; }
 
         public ObservableCollection<MergeInfoViewModel> Branches
         {
@@ -141,6 +151,84 @@ namespace AutoMerge
             {
                 _showWorkspaceChooser = value;
                 RaisePropertyChanged("ShowWorkspaceChooser");
+            }
+        }
+
+        public bool ShowMergeOne
+        {
+            get
+            {
+                return _showMergeOne;
+            }
+            set
+            {
+                _showMergeOne = value;
+                RaisePropertyChanged("ShowMergeOne");
+            }
+        }
+        private bool _showMergeOne;
+
+        private void ToggleMergeOneExecute()
+        {
+            try
+            {
+                ShowMergeOne = true;
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+                throw;
+            }
+        }
+
+        private void CancelMergeOneExecute()
+        {
+            try
+            {
+                ShowMergeOne = false;
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+            }
+        }
+
+        public bool ShowMergeAll
+        {
+            get
+            {
+                return _showMergeAll;
+            }
+            set
+            {
+                _showMergeAll = value;
+                RaisePropertyChanged("ShowMergeAll");
+            }
+        }
+        private bool _showMergeAll;
+
+        private void ToggleMergeAllExecute()
+        {
+            try
+            {
+                ShowMergeAll = true;
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+                throw;
+            }
+        }
+
+        private void CancelMergeAllExecute()
+        {
+            try
+            {
+                ShowMergeAll = false;
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
             }
         }
 

@@ -32,8 +32,7 @@ namespace AutoMerge
 
 		public Changeset GetChangeset(int changesetId)
 		{
-            //Niezabezpieczone / Unsecured - in debug if changeset with provided Id don't exist, extension crashes
-			var changeset = _versionControlServer.GetChangeset(changesetId, false, false);
+            var changeset = _versionControlServer.GetChangeset(changesetId, false, false);
 
 			return changeset;
 		}

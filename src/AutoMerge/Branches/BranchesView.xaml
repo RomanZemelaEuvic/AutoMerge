@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="AutoMerge.BranchesView"
+<UserControl x:Class="AutoMerge.BranchesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:autoMerge="clr-namespace:AutoMerge;assembly="
@@ -33,8 +33,8 @@
       <autoMerge:MergeModeToStringConverter x:Key="MergeModeToStringConverter" />
       <autoMerge:MergeOptionToStringConverter x:Key="MergeOptionToStringConverter" />
 
-      <DataTemplate x:Key="BranchItemTemplate" DataType="autoMerge:MergeInfoViewModel">
-        <StackPanel Orientation="Horizontal">
+      <DataTemplate x:Key="BranchItemTemplate" DataType="autoMerge:MergeInfoViewModel">        
+        <StackPanel Orientation="Horizontal">          
           <CheckBox Margin="0,0,5,0"
                     IsChecked="{Binding Checked,
                                         Mode=TwoWay}"
@@ -100,6 +100,18 @@
                  TextAlignment="Center" />
     </StackPanel>
     <StackPanel Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibleConverter}}">
+      <!--Merge one-->
+      <WrapPanel>
+      <teamExplorer:DropDownLink x:Name="mergeOne"
+                                 VerticalAlignment="Center"
+                                 DropDownMenuCommand="{Binding ToggleMergeOneCommand}"
+                                 Localization.Attributes="Text (Modifiable Readable Text)"
+                                 Text="Merge one changeset"
+                                 ToolTip="Menu with options to merge one changeset into one of the possible branches" />
+        <Button Command="{Binding CancelMergeOneCommand}">hide merge one</Button>
+      </WrapPanel>
+      <StackPanel Visibility="{Binding ShowMergeOne,
+                                 Converter={StaticResource TrueToVisibleConverter}}">
       <StackPanel Margin="0,0,0,6" Visibility="{Binding Path=ShowWorkspaceChooser, Converter={StaticResource TrueToVisibleConverter}}">
         <teamExplorer:DropDownLink VerticalAlignment="Center"
                                    Foreground="{DynamicResource BodyTextBrushKey}"
@@ -201,6 +213,21 @@
           </i:EventTrigger>
         </i:Interaction.Triggers>
       </ListBox>
-    </StackPanel>
+      </StackPanel>
+      <!--Merge all-->
+      <WrapPanel>
+      <teamExplorer:DropDownLink x:Name="mergeAll"
+                                 VerticalAlignment="Center"
+                                 DropDownMenuCommand="{Binding ToggleMergeAllCommand}"
+                                 Localization.Attributes="Text (Modifiable Readable Text)"
+                                 Text="Merge all changesets"
+                                 ToolTip="Attempt to merge all found changesets" />
+        <Button Command="{Binding CancelMergeAllCommand}">hide merge all</Button>
+      </WrapPanel>
+      <StackPanel Visibility="{Binding ShowMergeAll,
+                                 Converter={StaticResource TrueToVisibleConverter}}">
+        <Button>test</Button>
+      </StackPanel>
+    </StackPanel>    
   </StackPanel>
 </UserControl>
