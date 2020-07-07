@@ -9,6 +9,7 @@ using AutoMerge.Events;
 using AutoMerge.Prism.Command;
 using AutoMerge.Prism.Events;
 using EnvDTE80;
+using Microsoft.TeamFoundation;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.Common.Internal;
 using Microsoft.TeamFoundation.Controls;
@@ -47,6 +48,8 @@ namespace AutoMerge
 
             ToggleMergeAllCommand = new DelegateCommand(ToggleMergeAllExecute);
             CancelMergeAllCommand = new DelegateCommand(CancelMergeAllExecute);
+            MergeAllCommand = new DelegateCommand(MergeAllExecute);
+
 
             _eventAggregator = EventAggregatorFactory.Get();
             _merging = false;
@@ -55,11 +58,12 @@ namespace AutoMerge
         public DelegateCommand CancelMergeOneCommand { get; private set; }
         public DelegateCommand ToggleMergeAllCommand { get; private set; }
         public DelegateCommand CancelMergeAllCommand { get; private set; }
+        public DelegateCommand MergeAllCommand { get; private set; }
 
         public ObservableCollection<MergeInfoViewModel> Branches
         {
             get
-            {
+            {                
                 return _branches;
             }
             set
@@ -225,12 +229,41 @@ namespace AutoMerge
             try
             {
                 ShowMergeAll = false;
+                TargetBranchNameText = string.Empty;
             }
             catch (Exception ex)
             {
                 ShowException(ex);
             }
         }
+
+        public string TargetBranchNameText
+        {
+            get
+            {
+                return _targetBranchNameText;
+            }
+            set
+            {
+                _targetBranchNameText = value;
+                RaisePropertyChanged("TargetBranchNameText");
+            }
+        }
+        private string _targetBranchNameText;
+
+        private void MergeAllExecute()
+        {
+            try
+            {
+                //robienie rzeczy HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            }
+            catch (Exception ex)
+            {
+                ShowException(ex);
+            }
+        }
+
+       
 
         private MergeMode _mergeMode;
         public MergeMode MergeMode
@@ -1409,6 +1442,7 @@ namespace AutoMerge
         {
             var context = new BranchesViewModelContext
             {
+                TargetBranchNameText = TargetBranchNameText,
                 Branches = Branches,
                 Changeset = _changeset,
                 ErrorMessage = ErrorMessage,
@@ -1427,6 +1461,7 @@ namespace AutoMerge
         private void RestoreContext(SectionInitializeEventArgs e)
         {
             var context = (BranchesViewModelContext)e.Context;
+            TargetBranchNameText = context.TargetBranchNameText;
             _changeset = context.Changeset;
             Branches = context.Branches;
             ErrorMessage = context.ErrorMessage;
@@ -1437,6 +1472,7 @@ namespace AutoMerge
             ShowWorkspaceChooser = context.ShowWorkspaceChooser;
             Workspace = context.Workspace;
             Workspaces = context.Workspaces;
-        }
+        }        
+
     }
 }

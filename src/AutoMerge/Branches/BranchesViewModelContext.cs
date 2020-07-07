@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Microsoft.TeamFoundation.VersionControl.Client;
 
 namespace AutoMerge
@@ -18,6 +18,8 @@ namespace AutoMerge
         public ObservableCollection<Workspace> Workspaces { get; set; }
 
         public bool ShowWorkspaceChooser { get; set; }
+
+        public string TargetBranchNameText { get; set; }
 
         public MergeMode MergeMode { get; set; }
 

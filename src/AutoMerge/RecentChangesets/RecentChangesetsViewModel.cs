@@ -532,7 +532,7 @@ namespace AutoMerge
         {
             try
             {
-                return GeChangesetTeamIdsToAdd(ChangesetTeamIdsText).Count > 0;
+                return GetChangesetTeamIdsToAdd(ChangesetTeamIdsText).Count > 0;
             }
             catch (Exception ex)
             {
@@ -566,7 +566,7 @@ namespace AutoMerge
         }
 
         
-        private static List<int> GeChangesetTeamIdsToAdd(string text) 
+        private static List<int> GetChangesetTeamIdsToAdd(string text) 
         {
             var list = new List<int>();
             var idsStrArray = string.IsNullOrEmpty(text) ? new string[0] : text.Split(new[] { ',', ';' });

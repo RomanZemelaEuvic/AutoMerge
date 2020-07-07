@@ -226,7 +226,19 @@
       </WrapPanel>
       <StackPanel Visibility="{Binding ShowMergeAll,
                                  Converter={StaticResource TrueToVisibleConverter}}">
-        <Button>test</Button>
+        <tfcwpf:LabeledTextBox x:Name="targetBranchNameTextBox"
+                            Margin="0"
+                            AcceptsReturn="False"
+                            HintText="Enter the name of the branch"
+                            Localization.Attributes="HintText (Modifiable Readable Text)"
+                            Text="{Binding Path=TargetBranchNameText,
+                                           UpdateSourceTrigger=PropertyChanged,
+                                           Mode=TwoWay}">
+          <tfcwpf:LabeledTextBox.InputBindings>
+            <KeyBinding Key="Enter" Command="{Binding MergeAllCommand}" />
+          </tfcwpf:LabeledTextBox.InputBindings>
+        </tfcwpf:LabeledTextBox>
+        <Button Command="{Binding MergeAllCommand}">Merge all into branch</Button>
       </StackPanel>
     </StackPanel>    
   </StackPanel>
