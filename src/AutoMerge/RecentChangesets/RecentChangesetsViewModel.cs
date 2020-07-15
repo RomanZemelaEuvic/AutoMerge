@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using AutoMerge.Events;
 using AutoMerge.Prism.Command;
 using AutoMerge.Prism.Events;
@@ -76,13 +77,14 @@ namespace AutoMerge
         public ObservableCollection<ChangesetViewModel> Changesets
         {
             get
-            {
+            {                
                 return _changesets;
             }
             private set
             {
                 _changesets = value;
                 RaisePropertyChanged("Changesets");
+                if(Changesets.Count>0) _eventAggregator.GetEvent<AllChangesetsSelected>().Publish(Changesets);
             }
         }
         private ObservableCollection<ChangesetViewModel> _changesets;
@@ -403,10 +405,12 @@ namespace AutoMerge
 
                     if (changesets.Count > 0)
                     {
+                        Changesets.Clear();
                         foreach (ChangesetViewModel changeset in changesets)
                         {
                             Changesets.Add(changeset);
-                        }         
+                        }
+                        Changesets = new ObservableCollection<ChangesetViewModel>(Changesets.OrderBy(i => i.ChangesetId));
                         SelectedChangeset = changesets[0];
                         SetMvvmFocus(RecentChangesetFocusableControlNames.ChangesetList);
                         UpdateTitle();
@@ -440,12 +444,15 @@ namespace AutoMerge
 
                     if (changesets.Count > 0)
                     {
+                        Changesets.Clear();
                         CheckIfChangesetIsFromDesiredBranchAndAddToResults(changesets);
+                        Changesets = new ObservableCollection<ChangesetViewModel>(Changesets.OrderBy(i => i.ChangesetId));
                         SelectedChangeset = Changesets[0];
                         SetMvvmFocus(RecentChangesetFocusableControlNames.ChangesetList);
                         UpdateTitle();
                     }
                     ShowAddByTeamIdChangeset = false;
+                    _eventAggregator.GetEvent<AllChangesetsSelected>().Publish(Changesets);
                 }
             }
             catch (Exception ex)
@@ -453,7 +460,7 @@ namespace AutoMerge
                 ShowException(ex);
             }
             HideBusy();
-        }
+        }        
 
         private void CheckIfChangesetIsFromDesiredBranchAndAddToResults(List<ChangesetViewModel> changesets)
         {
