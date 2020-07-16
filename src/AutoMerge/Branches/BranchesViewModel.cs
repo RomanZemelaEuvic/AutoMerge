@@ -743,17 +743,9 @@ namespace AutoMerge
             Logger.Info("Merging start...");
             if (!mergeMode.HasValue)
                 return;
-            MergeMode = mergeMode.Value;
+            MergeMode = MergeMode.MergeAndCheckIn;
             Settings.Instance.LastMergeOperation = mergeMode.Value;
-            switch (mergeMode)
-            {
-                case MergeMode.Merge:
-                    await MergeAllAndCheckInExecute(false);
-                    break;
-                case MergeMode.MergeAndCheckIn:
-                    await MergeAllAndCheckInExecute(true);
-                    break;
-            }
+            await MergeAllAndCheckInExecute();               
             Logger.Info("Merging end");
         }
 
@@ -855,7 +847,7 @@ namespace AutoMerge
             }
         }
 
-        private async Task MergeAllAndCheckInExecute(bool checkInIfSuccess)
+        private async Task MergeAllAndCheckInExecute()
         {
             try
             {
@@ -864,7 +856,7 @@ namespace AutoMerge
 
                 //MergeCommand.RaiseCanExecuteChanged();
 
-                var result = await Task.Run(() => MergeAllExecuteInternal(checkInIfSuccess));
+                var result = await Task.Run(() => MergeAllExecuteInternal());
                 var notifications = new List<Notification>();
                 var notCheckedIn = new List<MergeResultModel>(result.Count);
                 ClearNotifications();
@@ -1073,7 +1065,7 @@ namespace AutoMerge
             return result;
         }
 
-        private List<MergeResultModel> MergeAllExecuteInternal(bool checkInIfSuccess)
+        private List<MergeResultModel> MergeAllExecuteInternal()
         {
             var result = new List<MergeResultModel>();
             var context = Context;
@@ -1105,16 +1097,19 @@ namespace AutoMerge
                 };
 
             var changesetVersionSpec = new ChangesetVersionSpec(changesetId);
+            var changesetProvider = new ChangesetByIdChangesetProvider(ServiceProvider, changesetId);
+            var changesets = await changesetProvider.GetChangesets(null);
 
-            var mergeResult = MergeToBranch(mergeInfo, mergeOption, mergeRelationships, workspace);
-                var targetPendingChanges = GetPendingChanges(mergeInfo.TargetPath, workspace);
+
+            var mergeResult = MergeToBranch(sourceBranch., targetBranch, changesetVersionSpec, mergeOption, mergeRelationships, workspace);
+                var targetPendingChanges = GetPendingChanges(targetBranch, workspace);
                 if (mergeResult == MergeResult.UnexpectedFileRestored)
                 {
                     workspace.Undo(targetPendingChanges.Select(pendingChange => new ItemSpec(pendingChange)).ToArray(),
                         true);
-                    mergeResult = MergeByFile(changeset.Changes, mergeInfo.TargetBranch, mergeRelationships,
-                        mergeInfo.ChangesetVersionSpec, mergeOption, workspace);
-                    targetPendingChanges = GetPendingChangesByFile(mergeRelationships, mergeInfo.TargetBranch, workspace);
+                    mergeResult = MergeByFile(changeset.Changes, targetBranch, mergeRelationships,
+                        changesetVersionSpec, mergeOption, workspace);
+                    targetPendingChanges = GetPendingChangesByFile(mergeRelationships, targetBranch, workspace);
                 }
 
                 if (targetPendingChanges.Count == 0)
