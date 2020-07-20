@@ -264,7 +264,7 @@ namespace AutoMerge
                 foreach (ChangesetViewModel Changeset in _changesets)
                 {
                     _currentChangeset = Changeset;
-                    MergeAllExecute(MergeMode);
+                    dfdf break ;
                 }   
             }
             catch (Exception ex)
@@ -741,8 +741,6 @@ namespace AutoMerge
         private async void MergeAllExecute(MergeMode? mergeMode)
         {
             Logger.Info("Merging start...");
-            if (!mergeMode.HasValue)
-                return;
             MergeMode = MergeMode.MergeAndCheckIn;
             Settings.Instance.LastMergeOperation = mergeMode.Value;
             await MergeAllAndCheckInExecute();               
@@ -854,9 +852,9 @@ namespace AutoMerge
                 IsBusy = true;
                 _merging = true;
 
-                //MergeCommand.RaiseCanExecuteChanged();
+                MergeCommand.RaiseCanExecuteChanged();
 
-                var result = await Task.Run(() => MergeAllExecuteInternal());
+                var result = await Task.Run(() => MergeExecuteInternal(true));
                 var notifications = new List<Notification>();
                 var notCheckedIn = new List<MergeResultModel>(result.Count);
                 ClearNotifications();
@@ -941,7 +939,7 @@ namespace AutoMerge
             {
                 IsBusy = false;
                 _merging = false;
-                //MergeCommand.RaiseCanExecuteChanged();
+                MergeCommand.RaiseCanExecuteChanged();
             }
         }
 
@@ -1093,15 +1091,12 @@ namespace AutoMerge
                 var mergeResultModel = new MergeResultModel
                 {
                     SourceChangesetId = changesetId,
-                    BranchInfo = targetBranch,
+              //      BranchInfo = ,
                 };
 
             var changesetVersionSpec = new ChangesetVersionSpec(changesetId);
-            var changesetProvider = new ChangesetByIdChangesetProvider(ServiceProvider, changesetId);
-            var changesets = await changesetProvider.GetChangesets(null);
 
-
-            var mergeResult = MergeToBranch(sourceBranch., targetBranch, changesetVersionSpec, mergeOption, mergeRelationships, workspace);
+            var mergeResult = MergeToBranch(_currentChangeset.Branches[0], targetBranch, changesetVersionSpec, mergeOption, mergeRelationships, workspace);
                 var targetPendingChanges = GetPendingChanges(targetBranch, workspace);
                 if (mergeResult == MergeResult.UnexpectedFileRestored)
                 {
@@ -1120,16 +1115,16 @@ namespace AutoMerge
                 mergeResultModel.PendingChanges = targetPendingChanges;
                 mergeResultModel.WorkItemIds = workItemIds;
 
-                var trackMergeInfo = GetTrackMergeInfo(mergeInfo, changeset, versionControl);
-                var comment = commentFormater.Format(trackMergeInfo, mergeInfo.TargetBranch, mergeOption);
-                mergeResultModel.Comment = comment;
+               // var trackMergeInfo = GetTrackMergeInfo(mergeInfo, changeset, versionControl);
+               // var comment = commentFormater.Format(trackMergeInfo, mergeInfo.TargetBranch, mergeOption);
+               // mergeResultModel.Comment = comment;
 
                 result.Add(mergeResultModel);
-                if (checkInIfSuccess && mergeResultModel.MergeResult == MergeResult.Merged)
+              //  if (checkInIfSuccess && mergeResultModel.MergeResult == MergeResult.Merged)
                 {
-                    var checkInResult = CheckIn(mergeResultModel.PendingChanges, comment, workspace, workItemIds, changeset.PolicyOverride, workItemStore);
-                    mergeResultModel.TagetChangesetId = checkInResult.ChangesetId;
-                    mergeResultModel.MergeResult = checkInResult.CheckinResult;
+               //     var checkInResult = CheckIn(mergeResultModel.PendingChanges, comment, workspace, workItemIds, changeset.PolicyOverride, workItemStore);
+               //     mergeResultModel.TagetChangesetId = checkInResult.ChangesetId;
+               //     mergeResultModel.MergeResult = checkInResult.CheckinResult;
                 }            
 
             return result;
