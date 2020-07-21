@@ -853,82 +853,76 @@ namespace AutoMerge
                 //MergeCommand.RaiseCanExecuteChanged(); Here add MergeAll.RaiseCanExecuteChaged()
 
                 var result = await Task.Run(() => MergeAllExecuteInternal());
-                var notifications = new List<Notification>();
                 ClearNotifications();
+
+                var notification = new Notification
+                {
+                    NotificationType = NotificationType.Information,
+                    Message = string.Empty
+                };
+
 
                 if (result == null)
                 {
-                    var notification = new Notification
-                    {
-                        NotificationType = NotificationType.Information,
-                        Message = string.Empty
-                    };
                     notification.NotificationType = NotificationType.Error;
                     notification.Message = "MergeAll failed. Have you forgot to specify the target branch?";
-                    if (!string.IsNullOrEmpty(notification.Message))
-                        notifications.Add(notification);
                     ShowNotification(notification.Message, notification.NotificationType, NotificationFlags.RequiresConfirmation, notification.Command, Guid.NewGuid());
                     _MergeAllFail = true;
                     return;
                 }
 
-                var notCheckedIn = new List<MergeResultModel>(result.Count);     
-                foreach (var resultModel in result)
+                bool MergeError = false;
+
+                var mergePath = string.Format("MERGE {0} -> {1}",
+                    BranchHelper.GetShortBranchName(result.BranchInfo.SourceBranch),
+                    BranchHelper.GetShortBranchName(result.BranchInfo.TargetBranch));
+                switch (result.MergeResult)
                 {
-                    var notification = new Notification
-                    {
-                        NotificationType = NotificationType.Information,
-                        Message = string.Empty
-                    };
-                    var mergePath = string.Format("MERGE {0} -> {1}",
-                        BranchHelper.GetShortBranchName(resultModel.BranchInfo.SourceBranch),
-                        BranchHelper.GetShortBranchName(resultModel.BranchInfo.TargetBranch));
-                    switch (resultModel.MergeResult)
-                    {
-                        case MergeResult.CheckInEvaluateFail:
-                            notification.NotificationType = NotificationType.Error;
-                            notification.Message = "Check In evaluate failed.";
-                            notCheckedIn.Add(resultModel);
-                            break;
-                        case MergeResult.CheckInFail:
-                            notification.NotificationType = NotificationType.Error;
-                            notification.Message = "Check In failed.";
-                            notCheckedIn.Add(resultModel);
-                            break;
-                        case MergeResult.NothingMerge:
-                            notification.NotificationType = NotificationType.Warning;
-                            notification.Message = "Nothing merged.";
-                            break;
-                        case MergeResult.HasConflicts:
-                            notification.NotificationType = NotificationType.Error;
-                            notification.Message = "Has conflicts.";
-                            notCheckedIn.Add(resultModel);
-                            break;
-                        case MergeResult.CanNotGetLatest:
-                            notification.NotificationType = NotificationType.Error;
-                            notification.Message = "Can not get latest.";
-                            break;
-                        case MergeResult.UnexpectedFileRestored:
-                            notification.NotificationType = NotificationType.Warning;
-                            notification.Message = "Some unexpected files were restored.";
-                            notCheckedIn.Add(resultModel);
-                            break;
-                        case MergeResult.Merged:
-                            notification.NotificationType = NotificationType.Information;
-                            notification.Message = "Files merged but not checked in.";
-                            notCheckedIn.Add(resultModel);
-                            break;
-                        case MergeResult.CheckIn:
-                            var changesetId = resultModel.TagetChangesetId.Value;
-                            notification.NotificationType = NotificationType.Information;
-                            notification.Message = string.Format("[Changeset {0}](Click to view the changeset details) successfully checked in.", changesetId);
-                            notification.Command = new DelegateCommand(() => ViewChangesetDetailsExecute(changesetId));
-                            break;
-                    }
-                    notification.Message = string.Format("{0}: {1}", mergePath, notification.Message);
-                    if (!string.IsNullOrEmpty(notification.Message))
-                        notifications.Add(notification);
+                    case MergeResult.CheckInEvaluateFail:
+                        notification.NotificationType = NotificationType.Error;
+                        notification.Message = "Check In evaluate failed.";
+                        MergeError = true;
+                        break;
+                    case MergeResult.CheckInFail:
+                        notification.NotificationType = NotificationType.Error;
+                        notification.Message = "Check In failed.";
+                        MergeError = true;
+                        break;
+                    case MergeResult.NothingMerge:
+                        notification.NotificationType = NotificationType.Warning;
+                        notification.Message = "Nothing merged.";
+                        break;
+                    case MergeResult.HasConflicts:
+                        notification.NotificationType = NotificationType.Error;
+                        notification.Message = "Has conflicts.";
+                        MergeError = true;
+                        break;
+                    case MergeResult.CanNotGetLatest:
+                        notification.NotificationType = NotificationType.Error;
+                        notification.Message = "Can not get latest.";
+                        MergeError = true;
+                        break;
+                    case MergeResult.UnexpectedFileRestored:
+                        notification.NotificationType = NotificationType.Warning;
+                        notification.Message = "Some unexpected files were restored.";
+                        MergeError = true;
+                        break;
+                    case MergeResult.Merged:
+                        notification.NotificationType = NotificationType.Information;
+                        notification.Message = "Files merged but not checked in.";
+                        notCheckedIn.Add(result);
+                        break;
+                    case MergeResult.CheckIn:
+                        var changesetId = result.TagetChangesetId.Value;
+                        notification.NotificationType = NotificationType.Information;
+                        notification.Message = string.Format("[Changeset {0}](Click to view the changeset details) successfully checked in.", changesetId);
+                        notification.Command = new DelegateCommand(() => ViewChangesetDetailsExecute(changesetId));
+                        break;
                 }
+                notification.Message = string.Format("{0}: {1}", mergePath, notification.Message);
+                if (!string.IsNullOrEmpty(notification.Message))
+                    notification.Add(notification);
+
 
                 if (notCheckedIn.Count > 0)
                 {
@@ -939,10 +933,9 @@ namespace AutoMerge
                     _eventAggregator.GetEvent<MergeCompleteEvent>().Publish(true);
                 }
 
-                foreach (var notification in notifications)
-                {
+                
                     ShowNotification(notification.Message, notification.NotificationType, NotificationFlags.RequiresConfirmation, notification.Command, Guid.NewGuid());
-                }
+                
             }
             catch (Exception ex)
             {
@@ -1079,7 +1072,7 @@ namespace AutoMerge
             return result;
         }
 
-        private List<MergeResultModel> MergeAllExecuteInternal()
+        private MergeResultModel MergeAllExecuteInternal()
         {
             var result = new List<MergeResultModel>();
             var context = Context;
@@ -1103,54 +1096,51 @@ namespace AutoMerge
             {
                 return null;
             }
-            var targetBranches = mergeInfos.Where(x => x.TargetBranch == _targetBranchNameText)
-                                           .Select(m => m.TargetBranch)
-                                           .ToArray();
+            var targetBranch = mergeInfos.First(x => x.TargetBranch == _targetBranchNameText).TargetBranch;
             var pendingChanges = GetChangesetPendingChanges(changeset.Changes);
-            var mergeRelationships = GetMergeRelationships(pendingChanges, targetBranches, versionControl);
+            var mergeRelationships = GetMergeRelationships(pendingChanges, targetBranch, versionControl);
 
             var commentFormater = new CommentFormater(Settings.Instance.CommentFormat);
-            foreach (var mergeInfo in mergeInfos.Where(b => b.Checked))
+            var mergeInfo = mergeInfos.First(x => x.TargetBranch == _targetBranchNameText);
+            var mergeResultModel = new MergeResultModel
             {
-                var mergeResultModel = new MergeResultModel
-                {
-                    SourceChangesetId = changesetId,
-                    BranchInfo = mergeInfo,
-                };
+                SourceChangesetId = changesetId,
+                BranchInfo = mergeInfo,
+            };
 
-                var mergeResult = MergeToBranch(mergeInfo, mergeOption, mergeRelationships, workspace);
-                var targetPendingChanges = GetPendingChanges(mergeInfo.TargetPath, workspace);
-                if (mergeResult == MergeResult.UnexpectedFileRestored)
-                {
-                    workspace.Undo(targetPendingChanges.Select(pendingChange => new ItemSpec(pendingChange)).ToArray(),
-                        true);
-                    mergeResult = MergeByFile(changeset.Changes, mergeInfo.TargetBranch, mergeRelationships,
-                        mergeInfo.ChangesetVersionSpec, mergeOption, workspace);
-                    targetPendingChanges = GetPendingChangesByFile(mergeRelationships, mergeInfo.TargetBranch, workspace);
-                }
-
-                if (targetPendingChanges.Count == 0)
-                {
-                    mergeResult = MergeResult.NothingMerge;
-                }
-                mergeResultModel.MergeResult = mergeResult;
-                mergeResultModel.PendingChanges = targetPendingChanges;
-                mergeResultModel.WorkItemIds = workItemIds;
-
-                var trackMergeInfo = GetTrackMergeInfo(mergeInfo, changeset, versionControl);
-                var comment = commentFormater.Format(trackMergeInfo, mergeInfo.TargetBranch, mergeOption);
-                mergeResultModel.Comment = comment;
-
-                result.Add(mergeResultModel);
-                //if (checkInIfSuccess && mergeResultModel.MergeResult == MergeResult.Merged)
-                //{
-                //    var checkInResult = CheckIn(mergeResultModel.PendingChanges, comment, workspace, workItemIds, changeset.PolicyOverride, workItemStore);
-                //    mergeResultModel.TagetChangesetId = checkInResult.ChangesetId;
-                //    mergeResultModel.MergeResult = checkInResult.CheckinResult;
-                //}
+            var mergeResult = MergeToBranch(mergeInfo, mergeOption, mergeRelationships, workspace);
+            var targetPendingChanges = GetPendingChanges(mergeInfo.TargetPath, workspace);
+            if (mergeResult == MergeResult.UnexpectedFileRestored)
+            {
+                workspace.Undo(targetPendingChanges.Select(pendingChange => new ItemSpec(pendingChange)).ToArray(),
+                    true);
+                mergeResult = MergeByFile(changeset.Changes, mergeInfo.TargetBranch, mergeRelationships,
+                    mergeInfo.ChangesetVersionSpec, mergeOption, workspace);
+                targetPendingChanges = GetPendingChangesByFile(mergeRelationships, mergeInfo.TargetBranch, workspace);
             }
 
-            return result;
+            if (targetPendingChanges.Count == 0)
+            {
+                mergeResult = MergeResult.NothingMerge;
+            }
+            mergeResultModel.MergeResult = mergeResult;
+            mergeResultModel.PendingChanges = targetPendingChanges;
+            mergeResultModel.WorkItemIds = workItemIds;
+
+            var trackMergeInfo = GetTrackMergeInfo(mergeInfo, changeset, versionControl);
+            var comment = commentFormater.Format(trackMergeInfo, mergeInfo.TargetBranch, mergeOption);
+            mergeResultModel.Comment = comment;
+
+
+            if (true && mergeResultModel.MergeResult == MergeResult.Merged)
+            {
+                var checkInResult = CheckIn(mergeResultModel.PendingChanges, comment, workspace, workItemIds,
+                    changeset.PolicyOverride, workItemStore);
+                mergeResultModel.TagetChangesetId = checkInResult.ChangesetId;
+                mergeResultModel.MergeResult = checkInResult.CheckinResult;
+            }
+
+            return mergeResultModel;
         }
 
 
