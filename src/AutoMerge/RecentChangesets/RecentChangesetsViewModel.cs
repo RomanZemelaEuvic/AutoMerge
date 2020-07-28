@@ -35,7 +35,7 @@ namespace AutoMerge
 
             _eventAggregator = EventAggregatorFactory.Get();
             _eventAggregator.GetEvent<MergeCompleteEvent>()
-                .Subscribe(OnMergeComplete);
+                            .Subscribe(OnMergeComplete);
 
 
             ViewChangesetDetailsCommand = new DelegateCommand(ViewChangesetDetailsExecute, ViewChangesetDetailsCanExecute);
@@ -209,7 +209,11 @@ namespace AutoMerge
 
         private async void OnMergeComplete(bool obj)
         {
-            await RefreshAsync();
+            try
+            {
+                await RefreshAsync();
+            }
+            catch (Exception) {}
         }
 
         protected override async Task InitializeAsync(object sender, SectionInitializeEventArgs e)

@@ -52,6 +52,7 @@ namespace AutoMerge
             CancelMergeAllCommand = new DelegateCommand(CancelMergeAllExecute);
             MergeAllCommand = new DelegateCommand(MergeAllExecute);
             _MergeAllFail = false;
+            List<MergeResultModel> _pendingChangees = new List<MergeResultModel>();
 
 
             _eventAggregator = EventAggregatorFactory.Get();
@@ -262,16 +263,26 @@ namespace AutoMerge
         {
             try
             {
-                foreach (ChangesetViewModel Changeset in _changesets)
+                _pendingChangees = new List<MergeResultModel>();
+                _toRemove = new List<ChangesetViewModel>();
+                foreach (ChangesetViewModel changeset in _changesets)
                 {
-                    _currentChangeset = Changeset;
+                    _currentChangeset = changeset;
                     await MergeAllAndCheckInExecute();
                     if (_MergeAllFail)
                     {
                         _MergeAllFail = false;
                         break;
                     }
-                }   
+                }
+                foreach (var toRemove in _toRemove)
+                {
+                _changesets.Remove(toRemove);
+                }
+                if (_pendingChangees.Count > 0)
+                {
+                    OpenPendingChanges(_pendingChangees);
+                }
             }
             catch (Exception ex)
             {
@@ -280,6 +291,9 @@ namespace AutoMerge
         }
         bool _MergeAllFail;
         ChangesetViewModel _currentChangeset;
+        List<MergeResultModel> _pendingChangees;
+        List<ChangesetViewModel> _toRemove;
+
 
 
         private MergeMode _mergeMode;
@@ -817,6 +831,7 @@ namespace AutoMerge
 
                 if (notCheckedIn.Count > 0)
                 {
+                    _MergeAllFail = true;
                     OpenPendingChanges(notCheckedIn);
                 }
                 else
@@ -869,72 +884,64 @@ namespace AutoMerge
                     ShowNotification(notification.Message, notification.NotificationType, NotificationFlags.RequiresConfirmation, notification.Command, Guid.NewGuid());
                     _MergeAllFail = true;
                     return;
-                }
+                }                
 
-                bool MergeError = false;
-
-                var mergePath = string.Format("MERGE {0} -> {1}",
-                    BranchHelper.GetShortBranchName(result.BranchInfo.SourceBranch),
-                    BranchHelper.GetShortBranchName(result.BranchInfo.TargetBranch));
+                var mergePath = string.Format("MERGE {0}", _currentChangeset.Comment);
                 switch (result.MergeResult)
                 {
                     case MergeResult.CheckInEvaluateFail:
                         notification.NotificationType = NotificationType.Error;
                         notification.Message = "Check In evaluate failed.";
-                        MergeError = true;
+                        _MergeAllFail = true;
+                        _pendingChangees.Add(result);
                         break;
                     case MergeResult.CheckInFail:
                         notification.NotificationType = NotificationType.Error;
                         notification.Message = "Check In failed.";
-                        MergeError = true;
+                        _MergeAllFail = true;
+                        _pendingChangees.Add(result);
                         break;
                     case MergeResult.NothingMerge:
                         notification.NotificationType = NotificationType.Warning;
                         notification.Message = "Nothing merged.";
+                        _toRemove.Add(_currentChangeset);
                         break;
                     case MergeResult.HasConflicts:
                         notification.NotificationType = NotificationType.Error;
                         notification.Message = "Has conflicts.";
-                        MergeError = true;
+                        _MergeAllFail = true;
+                        _pendingChangees.Add(result);
                         break;
                     case MergeResult.CanNotGetLatest:
                         notification.NotificationType = NotificationType.Error;
                         notification.Message = "Can not get latest.";
-                        MergeError = true;
+                        _MergeAllFail = true;
+                        _pendingChangees.Add(result);
                         break;
                     case MergeResult.UnexpectedFileRestored:
                         notification.NotificationType = NotificationType.Warning;
                         notification.Message = "Some unexpected files were restored.";
-                        MergeError = true;
+                        _MergeAllFail = true;
+                        _pendingChangees.Add(result);
                         break;
                     case MergeResult.Merged:
                         notification.NotificationType = NotificationType.Information;
                         notification.Message = "Files merged but not checked in.";
-                        notCheckedIn.Add(result);
                         break;
                     case MergeResult.CheckIn:
                         var changesetId = result.TagetChangesetId.Value;
                         notification.NotificationType = NotificationType.Information;
                         notification.Message = string.Format("[Changeset {0}](Click to view the changeset details) successfully checked in.", changesetId);
                         notification.Command = new DelegateCommand(() => ViewChangesetDetailsExecute(changesetId));
+                        _toRemove.Add(_currentChangeset);
                         break;
                 }
                 notification.Message = string.Format("{0}: {1}", mergePath, notification.Message);
-                if (!string.IsNullOrEmpty(notification.Message))
-                    notification.Add(notification);
 
-
-                if (notCheckedIn.Count > 0)
-                {
-                    OpenPendingChanges(notCheckedIn);
-                }
-                else
-                {
-                    _eventAggregator.GetEvent<MergeCompleteEvent>().Publish(true);
-                }
 
                 
-                    ShowNotification(notification.Message, notification.NotificationType, NotificationFlags.RequiresConfirmation, notification.Command, Guid.NewGuid());
+                ShowNotification(notification.Message, notification.NotificationType,
+                                 NotificationFlags.RequiresConfirmation, notification.Command, Guid.NewGuid());
                 
             }
             catch (Exception ex)
@@ -947,7 +954,7 @@ namespace AutoMerge
             {
                 IsBusy = false;
                 _merging = false;
-                MergeCommand.RaiseCanExecuteChanged();
+                //MergeCommand.RaiseCanExecuteChanged(); Here add MergeAll.RaiseCanExecuteChaged()
             }
         }
 
@@ -1092,11 +1099,12 @@ namespace AutoMerge
                 : new List<int>();
 
             var mergeInfos = _branches;
-            if (_targetBranchNameText.IsNullOrEmpty())
+
+            var targetBranch = mergeInfos.FirstOrDefault(x => x.TargetBranch == _targetBranchNameText)?.TargetBranch;
+            if (String.IsNullOrEmpty(targetBranch))
             {
                 return null;
-            }
-            var targetBranch = mergeInfos.First(x => x.TargetBranch == _targetBranchNameText).TargetBranch;
+            }            
             var pendingChanges = GetChangesetPendingChanges(changeset.Changes);
             var mergeRelationships = GetMergeRelationships(pendingChanges, targetBranch, versionControl);
 
@@ -1132,7 +1140,7 @@ namespace AutoMerge
             mergeResultModel.Comment = comment;
 
 
-            if (true && mergeResultModel.MergeResult == MergeResult.Merged)
+            if (mergeResultModel.MergeResult == MergeResult.Merged)
             {
                 var checkInResult = CheckIn(mergeResultModel.PendingChanges, comment, workspace, workItemIds,
                     changeset.PolicyOverride, workItemStore);
